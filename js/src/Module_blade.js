@@ -1,9 +1,7 @@
 (function() {
-    // Blade settings
-    bladeColor = "#ffffff41"; // base color with transparency
+    bladeColor = "#ffffff41";
     bladeWidth = 10;
 
-    // Draw the blade trail
     const buildBlade = (width) => {
         if (gameState === GAME_OVER) return;
 
@@ -24,18 +22,14 @@
 
             topContext.lineWidth = Math.max(lineWidth, 1);
             topContext.stroke();
-
             lineWidth -= step;
         }
     };
 
-    // Draw blade with color and glow effect
     buildColorBlade = (color, width) => {
-        // Base trail
         topContext.strokeStyle = color;
         buildBlade(width);
 
-        // Inner glowing trail for depth
         const gradient = topContext.createLinearGradient(0, 0, gameWidth, gameHeight);
         gradient.addColorStop(0, "#ffffff88");
         gradient.addColorStop(1, "#ffffff22");
@@ -43,7 +37,6 @@
         buildBlade(width * 0.6);
     };
 
-    // Create a new blade particle at the given position
     buildBladeParticle = (x, y) => {
         const p = bladeSystem.createParticle(SPP.Particle);
         p.init(x, y, 0.2);

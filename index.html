@@ -5,108 +5,31 @@
     <title>Fruit Ninja HTML5 Canvas</title>
 
     <style>
-        body, html {
-            height: 100%;
+        html, body {
             margin: 0;
             padding: 0;
-            background-color: #000;
-            font-family: 'Arial', sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #game-container {
-            position: relative;
-            width: 750px;
-            height: 500px;
-        }
-
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            display: block;
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
         }
-
-        #bottom {
-            background-image: url(assets/bg.jpg);
-            background-size: cover;
-            background-position: center;
-        }
-
-        #fork {
-            position: absolute;
-            right: -180px;
-            top: 0;
-            width: 149px;
-            height: 149px;
-            cursor: pointer;
-            z-index: 10;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-            pointer-events: auto;
-        }
-
-        #fork:hover {
-            transform: scale(1.1) rotate(10deg);
-            opacity: 0.9;
-        }
-
-        #info {
-            display: none;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 750px;
-            height: 500px;
-            margin-left: -375px;
-            margin-top: -250px;
-            color: #ffffff;
-            font-size: 16px;
-            text-align: center;
-            line-height: 1.5;
-            background: rgba(0,0,0,0.0); /* fully transparent */
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: none;
-            pointer-events: none;
-        }
-
-        #loading {
-            position: absolute;
-            z-index: 20;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-
-        #loading img {
-            display: block;
-            width: auto; /* keeps original GIF ratio */
-            height: 64px; /* can adjust height if needed */
-        }
-
-        .fruit {
-            position: absolute;
-            transition: transform 0.2s ease, opacity 0.2s ease;
-            will-change: transform, opacity;
-        }
+        #game-container { position: fixed; top:0; left:0; width:100vw; height:100vh; }
+        canvas { position: absolute; top:0; left:0; display:block; }
+        #bottom { background-image: url(assets/bg.jpg); background-size: cover; background-position: center; }
+        #fork { position: fixed; right:20px; top:20px; width:149px; height:149px; cursor:pointer; z-index:50; transition: transform 0.3s ease, opacity 0.3s ease; }
+        #fork:hover { transform: scale(1.1) rotate(10deg); opacity:0.9; }
+        #info { display:none; position:absolute; left:50%; top:50%; transform: translate(-50%, -50%); width:70vw; max-width:800px; color:#fff; text-align:center; font-size:18px; line-height:1.6; pointer-events:none; padding:20px; }
+        #loading { position: fixed; z-index:100; left:50%; top:50%; transform:translate(-50%, -50%); pointer-events:none; }
+        #loading img { height:64px; width:auto; }
     </style>
 
-    <!-- Third-party libs -->
     <script src="js/libs/spp.min.js"></script>
     <script src="js/libs/preloadjs-0.3.0.min.js"></script>
     <script src="js/libs/soundjs-0.4.0.min.js"></script>
     <script src="js/libs/TweenLite.min.js"></script>
     <script src="js/libs/EasePack.min.js"></script>
 
-    <!-- Game code -->
     <script src="js/src/FruitGame.js"></script>
     <script src="js/src/Assets.js"></script>
     <script src="js/src/AssetsManager.js"></script>
@@ -120,34 +43,72 @@
     <script src="js/src/Main.js"></script>
 
     <script>
-        // Show canvases and hide loading once game is ready
-        window.addEventListener('load', () => {
-            const canvases = ['bottom', 'middle', 'top'];
-            canvases.forEach(id => {
-                document.getElementById(id).style.display = 'block';
+        // Resize canvases and scale images
+        function resizeGame() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            ["bottom", "middle", "top"].forEach(id => {
+                const canvas = document.getElementById(id);
+                canvas.width = width;
+                canvas.height = height;
+                canvas.style.width = width + "px";
+                canvas.style.height = height + "px";
             });
+            FruitGame.scale = Math.max(width / 750, 0.5);
 
-            // Hide loading GIF after a short delay
-            setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
-            }, 500); // adjust time as needed
+            // Scale loaded fruit images
+            if (FruitGame.assetsManager && FruitGame.assetsManager.fruitsArray) {
+                FruitGame.assetsManager.fruitsArray.forEach(fruitSet => {
+                    Object.keys(fruitSet).forEach(key => {
+                        const img = fruitSet[key];
+                        if (img.naturalWidth) {
+                            img.width = img.naturalWidth * FruitGame.scale;
+                            img.height = img.naturalHeight * FruitGame.scale;
+                        }
+                    });
+                });
+            }
+        }
+
+        // Resume audio after first user gesture
+        function resumeAudioContext() {
+            if (createjs.Sound.activePlugin && createjs.Sound.activePlugin.context) {
+                const ctx = createjs.Sound.activePlugin.context;
+                if (ctx.state === "suspended") ctx.resume();
+            }
+        }
+
+        window.addEventListener("load", () => {
+            resizeGame();
+            setTimeout(() => document.getElementById('loading').style.display='none', 500);
+
+            // Attach to first user gesture
+            const gestureHandler = () => {
+                resumeAudioContext();
+                document.removeEventListener("mousedown", gestureHandler);
+                document.removeEventListener("touchstart", gestureHandler);
+            };
+            document.addEventListener("mousedown", gestureHandler);
+            document.addEventListener("touchstart", gestureHandler);
         });
+
+        window.addEventListener("resize", resizeGame);
     </script>
-
 </head>
-<body>
 
+<body>
 <div id="game-container">
     <canvas id="bottom"></canvas>
     <canvas id="middle"></canvas>
     <canvas id="top"></canvas>
+
     <div id="loading">
         <img src="assets/loading.gif" alt="Loading...">
     </div>
+
     <div id="info"></div>
 </div>
 
 <a id="fork" href="https://github.com/flashhawk" target="_blank"></a>
-
 </body>
 </html>
