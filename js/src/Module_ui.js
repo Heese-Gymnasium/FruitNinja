@@ -1,20 +1,15 @@
-(function() {
-    // Rotate animation for the "New Game" button
-    const ui_newGameUpdate = (particle) => {
-        particle.rotation += 0.01;
-    };
+(function () {
 
-    // Show the start game UI
+    const ui_newGameUpdate = (p) => { p.rotation += 0.01; };
+
     showStartGameUI = () => {
         gameState = GAME_READY;
 
-        // Game title
         ui_gameTitle = particleSystem.createParticle(SPP.SpriteImage);
         ui_gameTitle.init(0, -assetsManager.gametitle.height, Infinity, assetsManager.gametitle, topContext);
         ui_gameTitle.regX = ui_gameTitle.regY = 0;
         TweenLite.to(ui_gameTitle.position, 0.5, { y: 0 });
 
-        // New Game button
         ui_newGame = particleSystem.createParticle(SPP.SpriteImage);
         ui_newGame.init(gameWidth * 0.618, gameHeight * 0.618, Infinity, assetsManager.newgame, topContext);
         ui_newGame.scale = 5;
@@ -22,9 +17,9 @@
         ui_newGame.onUpdate = () => ui_newGameUpdate(ui_newGame);
         TweenLite.to(ui_newGame, 0.8, { scale: 1, alpha: 1, ease: Back.easeOut });
 
-        // Starting fruit animation
         ui_startFruit = fruitSystem.createParticle(FruitGame.Fruit);
         ui_startFruit.addEventListener("dead", startGame);
+
         const textureObj = assetsManager.getRandomFruit();
         ui_startFruit.init(
             gameWidth * 0.618,
@@ -34,14 +29,15 @@
             assetsManager.shadow,
             topContext
         );
+
         ui_startFruit.rotationStep = -0.02;
         ui_startFruit.scale = 0;
         ui_startFruit.alpha = 0;
         ui_startFruit.textureObj = textureObj;
+
         TweenLite.to(ui_startFruit, 1, { scale: 1, alpha: 1, ease: Back.easeOut });
     };
 
-    // Hide the start game UI
     hideStartGameUI = () => {
         ui_startFruit.removeEventListener("dead", startGame);
 
@@ -56,17 +52,27 @@
         });
     };
 
-    // Show score text on bottom canvas
     showScoreTextUI = () => {
         if (gameState === GAME_READY) return;
 
-        bottomContext.font = "36px Courier-Bold";
-        bottomContext.fillText(` ${score}`, 24, 6);
-        bottomContext.font = "14px Courier-Bold";
-        bottomContext.fillText(`Best: ${storage.highScore}`, 13, 50);
+        const mainSize = Math.floor(36 * (gameWidth / 800));
+        const subSize = Math.floor(20 * (gameWidth / 800));
+        const pad = Math.floor(12 * (gameWidth / 800));
+        const x = pad;
+
+        bottomContext.font = `${mainSize}px Courier-Bold`;
+        const m = bottomContext.measureText(`${score}`);
+        const mainH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+        const yScore = pad + mainH;
+        bottomContext.fillText(`${score}`, x, yScore);
+
+        bottomContext.font = `${subSize}px Courier-Bold`;
+        const s = bottomContext.measureText(`Best: ${storage.highScore}`);
+        const subH = s.actualBoundingBoxAscent + s.actualBoundingBoxDescent;
+        const yBest = yScore + subH + pad;
+        bottomContext.fillText(`Best: ${storage.highScore}`, x, yBest);
     };
 
-    // Show score and life UI
     showScoreUI = () => {
         ui_scoreIcon = particleSystem.createParticle(SPP.SpriteImage);
         ui_scoreIcon.init(10, 10, Infinity, assetsManager.score, bottomContext);
@@ -78,13 +84,11 @@
         ui_gameLife.regY = 0;
     };
 
-    // Hide score UI
     hideScoreUI = () => {
         if (ui_scoreIcon) ui_scoreIcon.life = 0;
         if (ui_gameLife) ui_gameLife.life = 0;
     };
 
-    // Show Game Over UI
     showGameoverUI = () => {
         ui_gameOver = particleSystem.createParticle(SPP.SpriteImage);
         ui_gameOver.init(gameWidth * 0.5, gameHeight * 0.5, Infinity, assetsManager.gameover, topContext);
@@ -98,7 +102,6 @@
         });
     };
 
-    // Hide Game Over UI and reset
     const gameoverUIHideComplete = () => {
         ui_gameOver.life = 0;
         hideScoreUI();

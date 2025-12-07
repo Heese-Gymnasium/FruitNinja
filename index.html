@@ -12,16 +12,81 @@
             height: 100%;
             background: #000;
             overflow: hidden;
-            font-family: Arial, sans-serif;
         }
-        #game-container { position: fixed; top:0; left:0; width:100vw; height:100vh; }
-        canvas { position: absolute; top:0; left:0; display:block; }
-        #bottom { background-image: url(assets/bg.jpg); background-size: cover; background-position: center; }
-        #fork { position: fixed; right:20px; top:20px; width:149px; height:149px; cursor:pointer; z-index:50; transition: transform 0.3s ease, opacity 0.3s ease; }
-        #fork:hover { transform: scale(1.1) rotate(10deg); opacity:0.9; }
-        #info { display:none; position:absolute; left:50%; top:50%; transform: translate(-50%, -50%); width:70vw; max-width:800px; color:#fff; text-align:center; font-size:18px; line-height:1.6; pointer-events:none; padding:20px; }
-        #loading { position: fixed; z-index:100; left:50%; top:50%; transform:translate(-50%, -50%); pointer-events:none; }
-        #loading img { height:64px; width:auto; }
+
+        #game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* All canvases receive input */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        /* Background for bottom canvas */
+        #bottom {
+            background-image: url(assets/bg.jpg);
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* GitHub icon */
+        #fork {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 149px;
+            height: 149px;
+            cursor: pointer;
+            z-index: 30;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        #fork:hover {
+            transform: scale(1.1) rotate(10deg);
+            opacity: 0.9;
+        }
+
+        /* FIXED → never blocks gameplay */
+        #info {
+            display: none !important;
+            position: absolute;
+            z-index: 0 !important;
+            pointer-events: none !important;
+            background: transparent !important;
+            color: #fff;
+            text-align: center;
+            width: 70vw;
+            max-width: 800px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* FIXED → never blocks gameplay */
+        #loading {
+            position: fixed;
+            z-index: 5;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none !important;
+        }
+
+        #loading img {
+            height: 64px;
+            width: auto;
+        }
     </style>
 
     <script src="js/libs/spp.min.js"></script>
@@ -43,34 +108,21 @@
     <script src="js/src/Main.js"></script>
 
     <script>
-        // Resize canvases and scale images
+        /* RESIZE FIX */
         function resizeGame() {
             const width = window.innerWidth;
             const height = window.innerHeight;
+
             ["bottom", "middle", "top"].forEach(id => {
                 const canvas = document.getElementById(id);
                 canvas.width = width;
                 canvas.height = height;
-                canvas.style.width = width + "px";
-                canvas.style.height = height + "px";
             });
-            FruitGame.scale = Math.max(width / 750, 0.5);
 
-            // Scale loaded fruit images
-            if (FruitGame.assetsManager && FruitGame.assetsManager.fruitsArray) {
-                FruitGame.assetsManager.fruitsArray.forEach(fruitSet => {
-                    Object.keys(fruitSet).forEach(key => {
-                        const img = fruitSet[key];
-                        if (img.naturalWidth) {
-                            img.width = img.naturalWidth * FruitGame.scale;
-                            img.height = img.naturalHeight * FruitGame.scale;
-                        }
-                    });
-                });
-            }
+            FruitGame.scale = Math.max(width / 750, 0.5);
         }
 
-        // Resume audio after first user gesture
+        /* AUDIO RESUME FIX */
         function resumeAudioContext() {
             if (createjs.Sound.activePlugin && createjs.Sound.activePlugin.context) {
                 const ctx = createjs.Sound.activePlugin.context;
@@ -78,18 +130,25 @@
             }
         }
 
+        /* INIT */
         window.addEventListener("load", () => {
             resizeGame();
-            setTimeout(() => document.getElementById('loading').style.display='none', 500);
 
-            // Attach to first user gesture
-            const gestureHandler = () => {
+            /* Hide loading instantly when ready */
+            setTimeout(() => {
+                const loader = document.getElementById("loading");
+                if (loader) loader.style.display = "none";
+            }, 500);
+
+            /* First click activates audio */
+            const gesture = () => {
                 resumeAudioContext();
-                document.removeEventListener("mousedown", gestureHandler);
-                document.removeEventListener("touchstart", gestureHandler);
+                document.removeEventListener("mousedown", gesture);
+                document.removeEventListener("touchstart", gesture);
             };
-            document.addEventListener("mousedown", gestureHandler);
-            document.addEventListener("touchstart", gestureHandler);
+
+            document.addEventListener("mousedown", gesture);
+            document.addEventListener("touchstart", gesture);
         });
 
         window.addEventListener("resize", resizeGame);
@@ -103,9 +162,10 @@
     <canvas id="top"></canvas>
 
     <div id="loading">
-        <img src="assets/loading.gif" alt="Loading...">
+        <img src="assets/loading.gif" alt="Loading">
     </div>
 
+    <!-- Now 100% harmless -->
     <div id="info"></div>
 </div>
 
